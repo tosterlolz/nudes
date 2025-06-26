@@ -1,102 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jumpscare</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: black;
-      overflow: hidden;
-      height: 100%;
-    }
-    video {
-      width: 100vw;
-      height: 100vh;
-      object-fit: cover;
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-    #click-overlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: black;
-      color: white;
-      font-size: 3em;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-      cursor: pointer;
-    }
-    #click-overlay.hidden {
-      display: none;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>My nudes <3</title>
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    height: 100%; width: 100%;
+    background: black;
+    overflow: hidden;
+    font-family: 'Impact', sans-serif;
+  }
+  body.shake {
+    animation: shake 0.5s infinite;
+  }
+  @keyframes shake {
+    0% { transform: translate(0,0) rotate(0deg); }
+    20% { transform: translate(-5px, 5px) rotate(-2deg); }
+    40% { transform: translate(5px, -5px) rotate(2deg); }
+    60% { transform: translate(-5px, 5px) rotate(-2deg); }
+    80% { transform: translate(5px, -5px) rotate(2deg); }
+    100% { transform: translate(0,0) rotate(0deg); }
+  }
+  #jumpscare-video {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 110vw;
+    height: 110vh;
+    object-fit: cover;
+    transform: translate(-50%, -50%) scale(1);
+    filter: blur(0);
+    transition: transform 0.3s ease, filter 0.3s ease;
+  }
+  body.red-flash {
+    animation: redFlash 0.3s infinite alternate;
+  }
+  @keyframes redFlash {
+    0% { background-color: black; }
+    100% { background-color: darkred; }
+  }
+  .jump-text {
+    position: absolute;
+    color: red;
+    font-size: 4em;
+    font-weight: 900;
+    text-shadow: 0 0 10px red;
+    user-select: none;
+    animation: fadeInOut 1.5s forwards;
+  }
+  @keyframes fadeInOut {
+    0% {opacity: 0;}
+    10% {opacity: 1;}
+    90% {opacity: 1;}
+    100% {opacity: 0;}
+  }
+</style>
 </head>
 <body>
-  <div id="click-overlay" class="hidden">Click to start</div>
-  <video id="jumpscare" autoplay playsinline>
+  <video id="jumpscare-video" autoplay playsinline>
     <source src="jumpscare.mp4" type="video/mp4" />
     Your browser does not support the video tag.
   </video>
 
-  <script>
-    const video = document.getElementById("jumpscare");
-    const overlay = document.getElementById("click-overlay");
+  <audio id="scream-sound" src="scream.mp3" preload="auto"></audio>
 
-    async function triggerVibration() {
-      if (navigator.vibrate) {
-        navigator.vibrate([200, 100, 200, 100, 500]); // krótkie uderzenia
-      }
+<script>
+  const video = document.getElementById('jumpscare-video');
+  const scream = document.getElementById('scream-sound');
+  const body = document.body;
+
+  // Max volume
+  video.volume = 1.0;
+  video.muted = false;
+
+  // Try to play video and scream sound, else fallback
+  async function playAll() {
+    try {
+      await video.play();
+      scream.volume = 1.0;
+      await scream.play();
+      startEffects();
+    } catch(e) {
+      console.warn("Autoplay failed, try user interaction");
+      // You can add a click to start fallback here if you want
     }
+  }
 
-    async function requestPasskey() {
-      if (window.PublicKeyCredential) {
-        try {
-          await navigator.credentials.get({
-            publicKey: {
-              challenge: new Uint8Array(32), // fake challenge
-              timeout: 60000,
-              userVerification: "required",
-              allowCredentials: []
-            }
-          });
-        } catch (e) {
-          // Ignorujemy błędy, bo to tylko dla efektu
-          console.warn("Passkey request failed or canceled");
-        }
-      }
+  // Screen shake effect by adding class
+  function startShake() {
+    body.classList.add('shake');
+  }
+
+  // Red flashing background
+  function startRedFlash() {
+    body.classList.add('red-flash');
+  }
+
+  // Zoom + blur effect on video
+  function zoomBlur() {
+    video.style.transform = 'translate(-50%, -50%) scale(1.2)';
+    video.style.filter = 'blur(2px)';
+  }
+
+  // Create random scary text on screen
+  const scaryMessages = ['RUN!', 'DON\'T LOOK!', 'HELP!', 'IT\'S BEHIND YOU!', 'NO ESCAPE!', 'SCREAM!'];
+
+  function spawnJumpText() {
+    const text = document.createElement('div');
+    text.className = 'jump-text';
+    text.textContent = scaryMessages[Math.floor(Math.random() * scaryMessages.length)];
+    text.style.top = (Math.random() * 80 + 10) + 'vh';
+    text.style.left = (Math.random() * 80 + 10) + 'vw';
+
+    document.body.appendChild(text);
+
+    setTimeout(() => {
+      text.remove();
+    }, 1500);
+  }
+
+  // Vibrate device
+  function vibrate() {
+    if (navigator.vibrate) {
+      navigator.vibrate([300, 150, 300, 150, 600]);
     }
+  }
 
-    async function startExperience() {
+  // Request WebAuthn passkey prompt (note: may not work without HTTPS or real creds)
+  async function requestPasskey() {
+    if (window.PublicKeyCredential) {
       try {
-        video.volume = 1.0;
-        video.muted = false;
-        await video.play();
-        overlay.classList.add("hidden");
-
-        // Fullscreen
-        if (video.requestFullscreen) video.requestFullscreen().catch(() => {});
-
-        // Vibration and passkey
-        triggerVibration();
-        requestPasskey();
-
-      } catch (e) {
-        overlay.classList.remove("hidden");
+        await navigator.credentials.get({
+          publicKey: {
+            challenge: Uint8Array.from('random-challenge-string', c => c.charCodeAt(0)),
+            timeout: 60000,
+            userVerification: "preferred",
+            allowCredentials: [{
+              id: new Uint8Array(16),
+              type: "public-key",
+              transports: ["internal"]
+            }]
+          }
+        });
+      } catch(e) {
+        console.warn('Passkey prompt failed or canceled');
       }
     }
+  }
 
-    document.addEventListener("DOMContentLoaded", startExperience);
-    overlay.addEventListener("click", startExperience);
-  </script>
+  // Start all spooky effects
+  function startEffects() {
+    startShake();
+    startRedFlash();
+    zoomBlur();
+    vibrate();
+    requestPasskey();
+
+    // Spawn scary texts every 700ms for 10 times
+    let count = 0;
+    const interval = setInterval(() => {
+      spawnJumpText();
+      count++;
+      if (count > 10) clearInterval(interval);
+    }, 700);
+  }
+
+  // Start on load
+  window.addEventListener('load', () => {
+    playAll();
+  });
+</script>
 </body>
 </html>
-
 
