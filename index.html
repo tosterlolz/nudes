@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jumpscare</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      overflow: hidden;
+      height: 100%;
+    }
+    video {
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    #click-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: black;
+      color: white;
+      font-size: 3em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      cursor: pointer;
+    }
+    #click-overlay.hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="click-overlay" class="hidden">Click to start</div>
+  <video id="jumpscare" autoplay playsinline>
+    <source src="jumpscare.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+
+  <script>
+    const video = document.getElementById("jumpscare");
+    const overlay = document.getElementById("click-overlay");
+
+    async function triggerVibration() {
+      if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 200, 100, 500]); // krótkie uderzenia
+      }
+    }
+
+    async function requestPasskey() {
+      if (window.PublicKeyCredential) {
+        try {
+          await navigator.credentials.get({
+            publicKey: {
+              challenge: new Uint8Array(32), // fake challenge
+              timeout: 60000,
+              userVerification: "required",
+              allowCredentials: []
+            }
+          });
+        } catch (e) {
+          // Ignorujemy błędy, bo to tylko dla efektu
+          console.warn("Passkey request failed or canceled");
+        }
+      }
+    }
+
+    async function startExperience() {
+      try {
+        video.volume = 1.0;
+        video.muted = false;
+        await video.play();
+        overlay.classList.add("hidden");
+
+        // Fullscreen
+        if (video.requestFullscreen) video.requestFullscreen().catch(() => {});
+
+        // Vibration and passkey
+        triggerVibration();
+        requestPasskey();
+
+      } catch (e) {
+        overlay.classList.remove("hidden");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", startExperience);
+    overlay.addEventListener("click", startExperience);
+  </script>
+</body>
+</html>
+
+
